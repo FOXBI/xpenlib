@@ -1,5 +1,5 @@
 #!/bin/bash
-ver="0.9.0-r01"
+ver="0.9.0-r02"
 #
 # Made by FOXBI
 # 2022.03.28
@@ -118,7 +118,7 @@ else
 fi
 if [ "$CCCNT" -gt "1" ]
 then
-    PCCNT="\/$CCCNT Cores "
+    PCCNT="/$CCCNT Cores "
 else
     PCCNT=" "
 fi    
