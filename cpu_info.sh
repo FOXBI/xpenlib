@@ -1,8 +1,8 @@
 #!/bin/bash
-ver="0.9.0-r02"
+ver="0.9.0-r03"
 #
 # Made by FOXBI
-# 2022.03.28
+# 2022.03.29
 #
 # Synology cpuinfo-core/Threads Library
 #
@@ -130,7 +130,7 @@ else
 fi
 cpu_cores="$TCCNT($TPCNT$PCCNT| $TTCNT)"
 echo ""
-echo -e "CPU information : "$cpu_vendor" "$cpu_series" "$cpu_ghz"0GHz"
+echo -e "CPU information : "$cpu_vendor" "$cpu_family" "$cpu_series" "$cpu_ghz"0GHz"
 echo -e "CPU core-thread : "$cpu_cores
 echo -e "CPU link : "$cpu_detail
 echo ""
