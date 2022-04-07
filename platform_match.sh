@@ -1,5 +1,5 @@
 #!/bin/bash
-ver="0.9.1-r01"
+ver="0.9.2-r01"
 #
 # Made by FOXBI
 # 2022.03.28
@@ -71,7 +71,14 @@ else
     BMODEL=`echo $AMODEL | tr '[A-Z]' '[a-z]'`
     BMODEL=`echo $BMODEL"\."`
 fi
-ECHK=`echo $ACHK | awk -F- '{print $1"-"$2}'`
+ECHK=`curl --no-progress-meter https://archive.synology.com/download/Os/DSM | grep noreferrer | awk -Fner\"\> '{print $2}'| egrep -vi "download|os|Parent" | sed "s/<\/a>//g" | egrep "^7" | head -1 | awk -F- '{print $1"-"$2}'`
+FCHK=`echo $ACHK | awk -F- '{print $1"-"$2}'`
+if [ "$CVERSION" == "$FCHK" ]
+then
+    ECHK=`echo $FCHK`
+else
+    ECHK=`echo $ECHK`
+fi
 
 EPLAT=`curl --no-progress-meter https://archive.synology.com/download/Os/DSM/$ACHK | grep noreferrer | awk -Fner\"\> '{print $2}'| grep "synology_" | sed "s/pat<\/a>//g" | sed "s/synology_//g" | grep -i "$BMODEL" | awk -F_ '{print $1}' | sed "s/$.//g"`
 EVERSION=`echo $EPLAT"-"$ECHK`
