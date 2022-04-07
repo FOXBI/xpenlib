@@ -1,3 +1,3 @@
 # xpenlib
 
-Library file for Xpenology
+Library file for make Xpenology shell script
