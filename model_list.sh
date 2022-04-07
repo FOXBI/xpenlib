@@ -1,5 +1,5 @@
 #!/bin/bash
-ver="0.9.0-r01"
+ver="0.9.1-r01"
 #
 # Made by FOXBI
 # 2022.03.28
@@ -63,7 +63,8 @@ ACNT=
 BCNT=
 ARRAY=()
 cecho c "Select Synology Model..."
-export ACHK=`curl --no-progress-meter https://archive.synology.com/download/Os/DSM | grep noreferrer | awk -Fner\"\> '{print $2}'| egrep -vi "download|os|Parent" | sed "s/<\/a>//g" | egrep "^7" | head -1`
+export ACHK=`curl --no-progress-meter https://archive.synology.com/download/Os/DSM | grep noreferrer | awk -Fner\"\> '{print $2}'| egrep -vi "download|os|Parent" | sed "s/<\/a>//g" | egrep "^7" | head -3 \
+            | awk -F- '{ if($3 ~ "^[0-9]") {print  $1"-"$2"-"$3} }' | head -1`
 while IFS= read -r LINE_A;
 do
     ACNT=$(($ACNT + 1))
