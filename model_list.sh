@@ -1,8 +1,8 @@
 #!/bin/bash
-ver="0.9.1-r01"
+ver="0.9.2-r01"
 #
 # Made by FOXBI
-# 2022.03.28
+# 2022.04.07
 #
 # Synology Model list Library
 #
@@ -80,15 +80,26 @@ done < <(curl --no-progress-meter https://archive.synology.com/download/Os/DSM/$
             | sed "s/^rs/RS/g" | sed "s/^fs/FS/g" | sed "s/^ds/DS/g" | sed "s/^dva/DVA/g" | sed "s/^rc/RC/g" | sed "s/sa/SA/g" | sed "s/rpxs/RPxs/g" )
 echo ""
 echo -e " ${ARRAY[@]}" | sed 's/\\ln/\n/g' | sed 's/\\lt/\t/g'
-read -n4 -p " -> Select Number Enter : " A_O
+read -n100 -p " -> Select Number Enter : " A_O
 echo ""
-A_O=$(($A_O - 1))
-for (( i = 0; i < $ACNT; i++)); do
-    if [ "$A_O" == $i ]
-    then
-        export AMODEL=`echo "${ARRAY[$i]}" | sed 's/\\\ln/ /g' | sed 's/\\\lt/ /g' | awk '{print $2}'`
-    fi
-done 
+A_OCHK=`echo $A_O | grep , | wc -l`
+if [ "$A_OCHK" -gt "0" ]
+then
+    while read LINE_B;
+    do
+        B=$((LINE_B - 1))
+        export AMODEL+=`echo "${ARRAY[$B]}" | sed 's/\\\ln//g' | sed 's/\\\lt//g' | awk '{print $2", "}'`
+    done < <(echo $A_O | tr ',' '\n')
+    AMODEL=`echo ${AMODEL[@]} | sed "s/,$//g"`
+else
+    A_O=$(($A_O - 1))
+    for (( i = 0; i < $ACNT; i++)); do
+        if [ "$A_O" == $i ]
+        then
+            export AMODEL=`echo "${ARRAY[$i]}" | sed 's/\\\ln/ /g' | sed 's/\\\lt/ /g' | awk '{print $2}'`
+        fi
+    done
+fi
 echo ""
 echo -e "The model name you selected is \033[0;31m"$AMODEL"\033[00m"
 echo ""
