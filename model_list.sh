@@ -80,7 +80,7 @@ done < <(curl --no-progress-meter https://archive.synology.com/download/Os/DSM/$
             | sed "s/^rs/RS/g" | sed "s/^fs/FS/g" | sed "s/^ds/DS/g" | sed "s/^dva/DVA/g" | sed "s/^rc/RC/g" | sed "s/sa/SA/g" | sed "s/rpxs/RPxs/g" )
 echo ""
 echo -e " ${ARRAY[@]}" | sed 's/\\ln/\n/g' | sed 's/\\lt/\t/g'
-read -n100 -p " -> Select Number Enter : " A_O
+read -n100 -p " -> Select Number Enter (To select multiple, separate them with , ) : " A_O
 echo ""
 A_OCHK=`echo $A_O | grep , | wc -l`
 if [ "$A_OCHK" -gt "0" ]
