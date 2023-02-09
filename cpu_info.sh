@@ -1,10 +1,10 @@
 #!/bin/bash
-ver="0.9.0-r03"
+ver="1.0.0-r04"
 #
 # Made by FOXBI
-# 2022.03.29
+# 2023.02.10
 #
-# Synology cpuinfo-core/Threads Library
+# Synology cpuinfo-core/Threads/Generation/Link Library
 #
 # ==============================================================================
 # Y or N Function
@@ -79,7 +79,18 @@ then
     then
         cpu_detail="https://ark.intel.com/content/www/us/en/ark.html"
     else
-        cpu_detail="https://ark.intel.com/content/www/us/en/ark/search.html?_charset_=UTF-8&q=$cpu_series"
+        cpu_search="https://ark.intel.com/content/www/us/en/ark/search.html?_charset_=UTF-8&q=$cpu_series"
+        temp_file="/tmp/cpu_info_temp_url.txt"
+        wget -q -O $temp_file "$cpu_search"
+        url_cnt=`cat $temp_file | grep "FormRedirectUrl" | grep "hidden" | wc -l`
+        if [ "$url_cnt" -gt 0 ]
+        then
+            gen_url2=`cat $temp_file | grep "FormRedirectUrl" | grep "hidden" | awk -F"value" '{print $2}' | awk -F\" '{print $2}'`
+        else
+            gen_url2=`cat $temp_file | grep "$cpu_series" | grep "href" | awk -F"href" '{print $2}' | awk -F\" '{print $2}'`
+        fi
+        cpu_detail="https://ark.intel.com$gen_url2"
+        cpu_gen=`curl --silent "$cpu_detail" | grep "Products formerly" | awk -F"Products formerly " '{print $2}' | sed "s/<\/a>//g"`
     fi
 elif [ "$cpu_vendor" == "AMD" ]
 then
@@ -133,4 +144,5 @@ echo ""
 echo -e "CPU information : "$cpu_vendor" "$cpu_family" "$cpu_series" "$cpu_ghz"0GHz"
 echo -e "CPU core-thread : "$cpu_cores
 echo -e "CPU link : "$cpu_detail
+echo -e "CPU Generation : "$cpu_gen
 echo ""
