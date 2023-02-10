@@ -1,5 +1,5 @@
 #!/bin/bash
-ver="1.0.0-r04"
+ver="1.0.0-r05"
 #
 # Made by FOXBI
 # 2023.02.10
@@ -87,7 +87,7 @@ then
         then
             gen_url2=`cat $temp_file | grep "FormRedirectUrl" | grep "hidden" | awk -F"value" '{print $2}' | awk -F\" '{print $2}'`
         else
-            gen_url2=`cat $temp_file | grep "$cpu_series" | grep "href" | awk -F"href" '{print $2}' | awk -F\" '{print $2}'`
+            gen_url2=`cat $temp_file | grep -"$cpu_series" | grep "href" | awk -F"href" '{print $2}' | awk -F\" '{print $2}'`
         fi
         cpu_detail="https://ark.intel.com$gen_url2"
         cpu_gen=`curl --silent "$cpu_detail" | grep "Products formerly" | awk -F"Products formerly " '{print $2}' | sed "s/<\/a>//g"`
