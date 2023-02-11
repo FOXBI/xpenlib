@@ -1,8 +1,8 @@
 #!/bin/bash
-ver="1.0.0-r05"
+ver="2.2.0-r01"
 #
 # Made by FOXBI
-# 2023.02.10
+# 2023.02.11
 #
 # Synology cpuinfo-core/Threads/Generation/Link Library
 #
@@ -63,15 +63,44 @@ if [ "$cpu_vendor_chk" -gt "0" ]
 then
     cpu_vendor="AMD"
 else
-    cpu_vendor="Intel"
+    cpu_vendor_chk=`cat /proc/cpuinfo | grep model | grep name | sort -u | sed "s/(.)//g" | sed "s/(..)//g" | sed "s/CPU//g" | grep Intel | wc -l`
+    if [ "$cpu_vendor_chk" -gt "0" ]
+    then
+        cpu_vendor="Intel"
+    else    
+        cpu_vendor=`cat /proc/cpuinfo | grep Hardware | sort -u | awk '{print $3}' | head -1`
+        if [ -z "$cpu_vendor" ]
+        then
+            cpu_vendor=`cat /proc/cpuinfo grep model | grep name | sort -u | awk '{print $3}' | head -1`
+        fi
+    fi
 fi
 if [ "$cpu_vendor" == "AMD" ]
 then
-    cpu_family=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | awk '{if($NF=="Processor") {print $0|"sed \"s/ Processor//g\""} else {$NF="";print $0}}' | head -1`
-    cpu_series=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk '{print $NF}' | head -1`
-else
-    cpu_family=`cat /proc/cpuinfo | grep model | grep name | sort -u | sed "s/(.)//g" | sed "s/(..)//g" | sed "s/CPU//g" | awk '{if($4=="Intel") {print $5} else {print $4}}' | head -1`
-    cpu_series=`cat /proc/cpuinfo | grep model | grep name | sort -u | sed "s/(.)//g" | sed "s/(..)//g" | sed "s/CPU//g" | awk '{if(index($6,"@")!=0) {print "Unkown"} else {if(index($7,"@")!=0) {if($6=="0000") {print "ES"} else {print $6}} else {print $6" "$7}}}' | head -1`
+    cpu_series=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | awk '{ for(i = NF; i > 1; i--) if ($i ~ /^[0-9]/) { for(j=i;j<=NF;j++)printf("%s ", $j);print("\n");break; }}' | sed "s/ *$//g"`
+    cpu_family=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | awk -F"$cpu_series" '{print $1}' | sed "s/ *$//g"`
+elif [ "$cpu_vendor" == "Intel" ]
+then
+    cpu_family=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk '{ for(i = 1; i < NF; i++) if ($i ~ /^Intel/) { for(j=i;j<=NF;j++)printf("%s ", $j);printf("\n") }}' | awk -F@ '{ print $1 }' | sed "s/(.)//g" | sed "s/(..)//g" | sed "s/ CPU//g" | awk '{print $2}' | head -1 | sed "s/ *$//g"`
+    cpu_series=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk '{ for(i = 1; i < NF; i++) if ($i ~ /^Intel/) { for(j=i;j<=NF;j++)printf("%s ", $j);printf("\n") }}' | awk -F@ '{ print $1 }' | sed "s/(.)//g" | sed "s/(..)//g" | sed "s/ CPU//g" | awk -F"$cpu_family " '{print $2}' | head -1 | sed "s/ *$//g"`
+    if [ -z "$cpu_series" ]
+    then
+        cpu_series="Unknown"
+    fi
+    if [ "$cpu_family" == "Pentium" ]
+    then
+        cpu_series_b="$cpu_series"
+        cpu_series="$cpu_family $cpu_series"
+    else
+        m_chk=`echo "$cpu_series" | grep -wi ".* M .*" | wc -l`
+        if [ "$m_chk" -gt 0 ]
+        then
+            cpu_series=`echo "$cpu_series" | sed "s/ M /-/g" | awk '{print $0"M"}'`
+        fi
+    fi
+else    
+    cpu_family=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*$cpu_vendor//g" | sed "s/^\s//g" | head -1`
+    cpu_series=""    
 fi        
 if [ "$cpu_vendor" == "Intel" ]
 then
@@ -85,16 +114,38 @@ then
         url_cnt=`cat $temp_file | grep "FormRedirectUrl" | grep "hidden" | wc -l`
         if [ "$url_cnt" -gt 0 ]
         then
-            gen_url2=`cat $temp_file | grep "FormRedirectUrl" | grep "hidden" | awk -F"value" '{print $2}' | awk -F\" '{print $2}'`
+            gen_url=`cat $temp_file | grep "FormRedirectUrl" | grep "hidden" | awk -F"value" '{print $2}' | awk -F\" '{print $2}'`
         else
-            gen_url2=`cat $temp_file | grep -wi "$cpu_series" | grep "href" | awk -F"href" '{print $2}' | awk -F\" '{print $2}'`
+            gen_url=`cat $temp_file | grep -wi "$cpu_series" | grep "href" | awk -F"href" '{print $2}' | awk -F\" '{print $2}'`
+            if [ "$cpu_family" == "Pentium" ]
+            then
+                chg_series=`echo $cpu_series | awk '{print "\\\-"$1"\\\-"$2"\\\-"}'`
+                gen_url=`cat $temp_file | grep -i "$chg_series" | grep "href" | awk -F"href" '{print $2}' | awk -F\" '{print $2}' | head -1`
+                cpu_series="$cpu_series_b"
+            fi            
+            if [ -z "$gen_url" ]
+            then
+                chg_series=`echo $cpu_series | awk '{print "\\\-"$1".*"$2"\\\-"}'`
+                gen_url=`cat $temp_file | grep -i "$chg_series" | grep "href" | awk -F"href" '{print $2}' | awk -F\" '{print $2}' | head -1`
+            fi
         fi
-        cpu_detail="https://ark.intel.com$gen_url2"
+        cpu_detail="https://ark.intel.com$gen_url"
         cpu_gen=`curl --silent "$cpu_detail" | grep "Products formerly" | awk -F"Products formerly " '{print $2}' | sed "s/<\/a>//g"`
     fi
 elif [ "$cpu_vendor" == "AMD" ]
 then
-    cpu_detail="https://www.amd.com/partner/processor-specifications"
+    cpu_search=`echo "$cpu_series" | awk '{print $1" "$2}'`
+    gen_url=`curl --silent -H "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" http://stackoverflow.com/questions/28760694/how-to-use-curl-to-get-a-get-request-exactly-same-as-using-chrome \
+                https://www.amd.com/en/products/specifications/processors | grep -wi "$cpu_search" | awk -F"views-field" '{print $1}' | awk -F"entity-" '{print $2}'`
+    if [ -z "$gen_url" ]
+    then
+        chg_series=`echo $cpu_series | awk '{print $1}'`
+        gen_url=`curl --silent -H "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" http://stackoverflow.com/questions/28760694/how-to-use-curl-to-get-a-get-request-exactly-same-as-using-chrome \
+                https://www.amd.com/en/products/specifications/processors | grep -wi "$chg_series" | awk -F"views-field" '{print $1}' | awk -F"entity-" '{print $2}'`
+    fi
+    cpu_detail="https://www.amd.com/en/product/$gen_url"
+    cpu_gen=`curl --silent -H "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" http://stackoverflow.com/questions/28760694/how-to-use-curl-to-get-a-get-request-exactly-same-as-using-chrome \
+             $cpu_detail | egrep -A 2 -w ">Former Codename<|>Architecture<" | grep "field__item" | sed "s/&quot;/\"/g" | awk -F\"\>\" '{print $2}' | awk -F\" '{print $1}' | tr "\n" "| " | awk -F\| '{if($2=="") {print $1} else {print $1" | " $2}}'`
 else
     cpu_detail=""
 fi
