@@ -1,8 +1,8 @@
 #!/bin/bash
-ver="2.2.0-r01"
+ver="2.5.0-r01"
 #
 # Made by FOXBI
-# 2023.02.11
+# 2023.02.18
 #
 # Synology cpuinfo-core/Threads/Generation/Link Library
 #
@@ -77,7 +77,18 @@ else
 fi
 if [ "$cpu_vendor" == "AMD" ]
 then
+    pro_cnt=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | grep -wi "PRO" | wc -l`
+    if [ "$pro_cnt" -gt 0 ]
+    then
+        pro_chk="-wi PRO"
+    else
+        pro_chk="-v PRO"
+    fi
     cpu_series=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | awk '{ for(i = NF; i > 1; i--) if ($i ~ /^[0-9]/) { for(j=i;j<=NF;j++)printf("%s ", $j);print("\n");break; }}' | sed "s/ *$//g"`
+    if  [ -z "$cpu_series" ]
+    then
+        cpu_series=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | awk '{ for(i = NF; i >= 1; i--) if ($i ~ ".*-.*") { print $i }}' | sed "s/ *$//g" | sed "s/NF$ //g"`
+    fi
     cpu_family=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | awk -F"$cpu_series" '{print $1}' | sed "s/ *$//g"`
 elif [ "$cpu_vendor" == "Intel" ]
 then
@@ -136,12 +147,20 @@ elif [ "$cpu_vendor" == "AMD" ]
 then
     cpu_search=`echo "$cpu_series" | awk '{print $1" "$2}'`
     gen_url=`curl --silent -H "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" http://stackoverflow.com/questions/28760694/how-to-use-curl-to-get-a-get-request-exactly-same-as-using-chrome \
-                https://www.amd.com/en/products/specifications/processors | grep -wi "$cpu_search" | awk -F"views-field" '{print $1}' | awk -F"entity-" '{print $2}'`
+                https://www.amd.com/en/products/specifications/processors | grep -wi "$cpu_search" | grep $pro_chk | awk -F"views-field" '{print $1}' | awk -F"entity-" '{print $2}'`
     if [ -z "$gen_url" ]
     then
         chg_series=`echo $cpu_series | awk '{print $1}'`
         gen_url=`curl --silent -H "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" http://stackoverflow.com/questions/28760694/how-to-use-curl-to-get-a-get-request-exactly-same-as-using-chrome \
-                https://www.amd.com/en/products/specifications/processors | grep -wi "$chg_series" | awk -F"views-field" '{print $1}' | awk -F"entity-" '{print $2}'`
+                https://www.amd.com/en/products/specifications/processors | grep -wi "$chg_series" | grep $pro_chk | awk -F"views-field" '{print $1}' | awk -F"entity-" '{print $2}'`
+    fi
+    if [ -z "$gen_url" ]
+    then
+        cpu_series=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | awk '{ for(i = NF; i >= 1; i--) if ($i ~ ".*-.*") { print $i }}' | sed "s/ *$//g"`
+        cpu_family=`cat /proc/cpuinfo | grep model | grep name | sort -u | awk -F: '{print $2}' | sed "s/^\s*AMD//g" | sed "s/^\s//g" | head -1 | awk -F"$cpu_series" '{print $1}' | sed "s/ *$//g"`    
+        chg_series=`echo $cpu_series | awk '{print $1}'`
+        gen_url=`curl --silent -H "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" http://stackoverflow.com/questions/28760694/how-to-use-curl-to-get-a-get-request-exactly-same-as-using-chrome \
+                https://www.amd.com/en/products/specifications/processors | grep -wi "$chg_series" | grep $pro_chk | awk -F"views-field" '{print $1}' | awk -F"entity-" '{print $2}'`        
     fi
     cpu_detail="https://www.amd.com/en/product/$gen_url"
     cpu_gen=`curl --silent -H "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" http://stackoverflow.com/questions/28760694/how-to-use-curl-to-get-a-get-request-exactly-same-as-using-chrome \
